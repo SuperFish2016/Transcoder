@@ -1,0 +1,14 @@
+prefix=/Volumes/MAC_DEV/ffmpeg/ffmpeg-4.1.3/build/
+exec_prefix=${prefix}
+libdir=/Volumes/MAC_DEV/ffmpeg/ffmpeg-4.1.3/build//lib
+includedir=/Volumes/MAC_DEV/ffmpeg/ffmpeg-4.1.3/build//include
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: 58.20.100
+Requires: 
+Requires.private: libavcodec >= 58.35.100, libswresample >= 3.3.100, libavutil >= 56.22.100
+Conflicts:
+Libs: -L${libdir}  -lavformat 
+Libs.private: -lm -lbz2 -lz -Wl,-framework,CoreFoundation -Wl,-framework,Security
+Cflags: -I${includedir}
