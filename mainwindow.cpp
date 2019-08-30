@@ -51,7 +51,6 @@ void MainWindow::on_pushButton_clicked()
     transcoder = new Transcoder(params);
     connect(transcoder, &Transcoder::imageReady, this, &MainWindow::showImage);
     transcoder->start();
-    transcoder->reportTranscodeResult();
 }
 
 

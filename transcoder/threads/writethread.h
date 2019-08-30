@@ -22,7 +22,7 @@ protected:
 signals:
     void progress(int i);
     void progressText(const QString&);
-    void reportStatus(enTranscodeError stauts);
+    void reportStatus(TranscoderError stauts);
     void qImageReady(const QImage& image);
 private:
     bool createWriter();

@@ -43,7 +43,7 @@ void EncodeThread::run()
         }
         if(!encoder_->encodeFrame(buffer, resultBuffer))
         {
-            emit reportStatus(EncodeError);
+            emit reportStatus(TSR_ENCODER_ERROR);
             break;
         }
         encodedFramesVector_->pushData(resultBuffer);

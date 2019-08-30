@@ -44,7 +44,7 @@ void ReadThread::run()
                 if(frame == nullptr)
                 {
                    hasError = true;
-                   emit reportStatus(DecodeError);
+                   emit reportStatus(TSR_DECODER_ERROR);
                    break;
                 }
                 frame->setFrameNumber(frameIndex++);
@@ -54,6 +54,6 @@ void ReadThread::run()
         if(hasError)
             break;
     }
-    emit reportStatus(DecodeEnd);
+    emit reportStatus(TSR_DECODER_END);
     qDebug() << "ReadThread Thread > END. ";
 }

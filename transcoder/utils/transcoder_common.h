@@ -4,24 +4,6 @@
 #include <QString>
 /*! @brief Error status */
 
-enum enTranscodeError
-{
-    DecodeStart,
-    DecodeEnd,
-    DecodeError,
-    EncodeError,
-    EnocdeStart,
-    EncodeEnd,
-    WriteStart,
-    WriteEnd,
-    WriteError,
-    WriterOpenError,
-    WriterCloseError,
-    UserCancel,
-    NoError
-};
-
-
 typedef enum TranscoderError
 {
     TSR_SUCCESS,         /**< @brief Success, no errors */

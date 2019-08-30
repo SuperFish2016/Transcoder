@@ -16,7 +16,7 @@ public:
     ReadThread(DecodedFramesQueue* queue, const QList<VideoSource>& videoList_, volatile bool *stopped_);
     void putOneFrame(FrameBuffer*);
 signals:
-    void reportStatus(enTranscodeError stauts);
+    void reportStatus(TranscoderError stauts);
 protected:
     void run();
 private:

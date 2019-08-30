@@ -8,13 +8,13 @@ class EncodeThread : public QThread
 {
     Q_OBJECT
 public:
-    EncodeThread(DecodedFramesQueue* DecodedFramesQueue, EncodedFramesVector* j2kFramesVector, quint32 maxBufferSize, volatile bool *stopped);
+    EncodeThread(DecodedFramesQueue* DecodedFramesQueue, EncodedFramesVector* encodedFramesVector, quint32 maxBufferSize, volatile bool *stopped);
     ~EncodeThread(){}
     void setId(qint32 id){id_ = id;}
     qint32 id() const{ return id_;}
     TSR::FrameBuffer* takeOneFrame();
 signals:
-    void reportStatus(enTranscodeError stauts);
+    void reportStatus(TranscoderError stauts);
 protected:
     void run();
 private:

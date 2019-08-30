@@ -2,33 +2,16 @@
 #define TRANSCODER_H
 
 #include "utils/buffer.h"
+#include  "utils/transcoder_common.h"
 #include "utils/videodefs.h"
 #include "threads/threadsafequeue.h"
 #include "threads/threadsafevector.h"
-
 #include <QPointer>
 #include <QProgressBar>
 #include <QProgressDialog>
 class WriteThread;
 class EncodeThread;
 class ReadThread;
-
-enum enTranscodeError
-{
-    DecodeStart,
-    DecodeEnd,
-    DecodeError,
-    EncodeError,
-    EnocdeStart,
-    EncodeEnd,
-    WriteStart,
-    WriteEnd,
-    WriteError,
-    WriterOpenError,
-    WriterCloseError,
-    UserCancel,
-    NoError
-};
 
 class Transcoder : public QObject
 {
@@ -44,38 +27,37 @@ public:
 public:
     Transcoder(const TrancoderParams& transParams);
     ~Transcoder();
-    void setProgressBarVisible(bool visible);
+    /* return true is transcoder is running. */
     bool isTranscoding();
-    void reportTranscodeResult();
+    /* run all working threads in transcoder*/
     void start();
+    /* stop all working threads in transcoder*/
     void stop();
 private:
     void createThreads();
-    void createProgressBar();
     void cleanUp();
-
     bool okToCancel();
-    QString getErrorString(enTranscodeError);
+    QString getErrorString(TranscoderError);
 signals:
     void imageReady(const QImage& image);
-private slots:
+    /* current progress */
     void setProgress(int i);
+    /* current progress text. eg: elapsed time: 00:10:00:00 */
     void setProgressText(const QString&);
-    void cancelProgressBar();
 public slots:
-    void handleThreadStatus(enTranscodeError);
+    void cancelTranscoding();
+private slots:
+    void handleThreadStatus(TranscoderError);
 private:
-    WriteThread*  writer_;
-    ReadThread*   reader_;
+    QPointer<WriteThread>  writer_;
+    QPointer<ReadThread>   reader_;
     QList<QPointer<EncodeThread> >encoders_;
-
-    DecodedFramesQueue  DecodedFramesQueue;
-    EncodedFramesVector j2kFramesVector;
+    DecodedFramesQueue  decodedFramesQueue;
+    EncodedFramesVector encodedFramesVector;
 
     volatile bool stopped_;
 
-    QProgressDialog  progressBar_;
-    enTranscodeError error_;
+    TranscoderError  error_;
     TrancoderParams  transParams_;
     qint32 framesNeedBeWritten;
 };

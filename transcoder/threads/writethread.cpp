@@ -31,7 +31,7 @@ void WriteThread::run()
     timer_.start();
     if(!createWriter())
     {
-        emit reportStatus(WriterOpenError);
+        emit reportStatus(TSR_WRITER_OPEN_ERROR);
         return;
     }
 
