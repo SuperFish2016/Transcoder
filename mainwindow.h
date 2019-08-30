@@ -19,7 +19,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 public slots:
-    void showImage(const QImage& image);
+    void showImage(const QImage& image); // display image on ui.
 protected:
     void closeEvent(QCloseEvent *event);
 private slots:
