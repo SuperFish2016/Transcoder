@@ -1,9 +1,13 @@
 #include "encodethread.h"
 #include "../encoders/encoder.h"
 
-EncodeThread::EncodeThread(DecodedFramesQueue *decodedFramesQueue, EncodedFramesVector *encodedframesVector, quint32 maxBufferSize, volatile bool *stopped)
-    : DecodedFramesQueue_(decodedFramesQueue), encodedFramesVector_(encodedframesVector),
-      maxBufferSize_(maxBufferSize), id_(0), stopped_(stopped)
+EncodeThread::EncodeThread(DecodedFramesQueue *decodedFramesQueue, EncodedFramesVector *encodedframesVector, qint32 maxBufferSize, volatile bool *stopped, TranscoderOption* option)
+    : DecodedFramesQueue_(decodedFramesQueue),
+      encodedFramesVector_(encodedframesVector),
+      maxBufferSize_(maxBufferSize),
+      id_(0),
+      stopped_(stopped),
+      transOptions_(option)
  {
     Encoder::EncoderParams params;
     encoder_ = EncoderFactory::createEncoder(Encoder::FFMPEG_Encoder, params);
@@ -22,7 +26,7 @@ void EncodeThread::run()
         if(*stopped_)
             break;
         TSR::FrameBuffer* buffer = takeOneFrame(); // buffer is NULL only deocde thread finsied.
-        if(buffer == NULL)
+        if(buffer == nullptr)
             break;
         if(*stopped_)
             break;

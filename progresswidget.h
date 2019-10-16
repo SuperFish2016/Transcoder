@@ -15,6 +15,9 @@ public:
     explicit ProgressWidget(QWidget *parent = nullptr);
     ~ProgressWidget();
 
+public slots:
+    void setProgress(int i);
+    void setProgressText(const QString& elapsedTime, const QString& remainingTime);
 private:
     Ui::ProgressWidget *ui;
 };

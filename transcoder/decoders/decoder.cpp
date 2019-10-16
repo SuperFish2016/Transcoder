@@ -2,9 +2,10 @@
 #include "ffmpegdecoder.h"
 #include "mxfdecoder.h"
 #include "../utils/buffer.h"
+#include "../utils/transcoder_common.h"
 using namespace TSR;
-Decoder::Decoder(const VideoSource& s)
-    :videoSource_(s)
+Decoder::Decoder(TranscoderOption *options)
+    :transOptions_(options)
 {
 
 }
@@ -14,15 +15,15 @@ Decoder::~Decoder()
 
 }
 
-Decoder* DecoderFactory::createDecoder(Decoder::DecoderType decoder, const VideoSource& source)
+Decoder* DecoderFactory::createDecoder(Decoder::DecoderType decoder, TranscoderOption* options)
 {
     Decoder* d = nullptr;
     switch (decoder) {
     case Decoder::MXF_Decoder:
-        d =  new MXFDecoder(source);
+        d =  new MXFDecoder(options);
         break;
     case Decoder::FFmpeg_Decoder:
-        d = new FFmpegDecoder(source);
+        d = new FFmpegDecoder(options);
         break;
     }
     return d;

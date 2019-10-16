@@ -7,16 +7,11 @@
 #include <QApplication>
 #include <QMetaType>
 
-Transcoder::Transcoder(const TrancoderParams& transParams):
-    stopped_(false), error_(TSR_SUCCESS), transParams_(transParams)
+Transcoder::Transcoder(const TranscoderOption& transParams):
+    stopped_(false), error_(TSR_SUCCESS), transOptions_(transParams)
 {
     qRegisterMetaType<TranscoderError>("TranscoderError");
-    framesNeedBeWritten = 0;
-    QListIterator<VideoSource> it(transParams_.videoList);
-    while(it.hasNext())
-    {
-        framesNeedBeWritten += it.next().duration;
-    }
+    framesNeedBeWritten = transOptions_.sourceInfo.endFrame - transOptions_.sourceInfo.startFrame + 1;
     createThreads();
 }
 
@@ -27,32 +22,20 @@ Transcoder::~Transcoder()
 
 void Transcoder::createThreads()
 {
-    reader_ = new ReadThread(&decodedFramesQueue, transParams_.videoList, &stopped_);
-#if (QT_VERSION >= QT_VERSION_CHECK(5,0,0))
-    connect(reader_, &ReadThread::reportStatus, this, &Transcoder::handleThreadStatus);
-#else
-    connect(reader_, SIGNAL(reportStatus(enTranscodeError)), this, SLOT(handleThreadStatus(enTranscodeError)));
-#endif
-    writer_  = new WriteThread(framesNeedBeWritten, &encodedFramesVector, transParams_.outputFileName, &stopped_);
-#if (QT_VERSION >= QT_VERSION_CHECK(5,0,0))
-    connect(writer_, &WriteThread::qImageReady, this, &Transcoder::imageReady);
-    connect(writer_, &WriteThread::reportStatus, this, &Transcoder::handleThreadStatus);
-    connect(writer_, &WriteThread::progress, this, &Transcoder::setProgress);
-    connect(writer_, &WriteThread::progressText, this, &Transcoder::setProgressText);
-#else
-    connect(writer_, SIGNAL(reportStatus(enTranscodeError)), this, SLOT(handleThreadStatus(enTranscodeError)));
-    connect(writer_, SIGNAL(progress(int)), this, SLOT(setProgress(int)));
-    connect(writer_, SIGNAL(progressText(QString)), this, SLOT(setProgressText(QString)));
-#endif
-    const int maxBufferSize = J2KFramesVectorSize / transParams_.encodeThreadNumber;
-    for(int i = 1; i <= transParams_.encodeThreadNumber; i++)
+    reader_ = new ReadThread(&decodedFramesQueue, &stopped_, &transOptions_);
+    connect(reader_, SIGNAL(reportStatus(TranscoderError)), this, SLOT(handleThreadStatus(TranscoderError)));
+    writer_  = new WriteThread(framesNeedBeWritten, &encodedFramesVector, QString::fromStdString(transOptions_.outputFilename), &stopped_);
+
+    connect(writer_, SIGNAL(reportStatus(TranscoderError)), this, SLOT(handleThreadStatus(TranscoderError)));
+    connect(writer_, SIGNAL(progress(int)),                 this, SIGNAL(currentProgress(int)));
+    connect(writer_, SIGNAL(progressText(const QString&, const QString& )),         this, SIGNAL(currentProgressText(const QString&, const QString& )));
+    connect(writer_, SIGNAL(qImageReady(const QImage&)),   this, SIGNAL(imageReady(const QImage&)));
+
+    const int maxBufferSize = EncodedFramesBufferSize / transOptions_.encodingThreadCount;
+    for(int i = 1; i <= transOptions_.encodingThreadCount; i++)
     {
-        QPointer<EncodeThread> encoder = QPointer<EncodeThread>(new EncodeThread(&decodedFramesQueue, &encodedFramesVector, maxBufferSize, &stopped_));
-#if(QT_VERSION >= QT_VERSION_CHECK(5,0,0))
-        connect(encoder.data(), &EncodeThread::reportStatus, this, &Transcoder::handleThreadStatus);
-#else
-        connect(encoder.data(), SIGNAL(reportStatus(enTranscodeError)), this, SLOT(handleThreadStatus(enTranscodeError)));
-#endif
+        QPointer<EncodeThread> encoder = QPointer<EncodeThread>(new EncodeThread(&decodedFramesQueue, &encodedFramesVector, maxBufferSize, &stopped_, &transOptions_));
+        connect(encoder.data(), SIGNAL(reportStatus(TranscoderError)), this, SLOT(handleThreadStatus(TranscoderError)));
         encoder.data()->setId(i);
         encoders_.push_back(encoder);
     }
@@ -78,23 +61,6 @@ void Transcoder::start()
     while(this->isTranscoding()){
         qApp->processEvents();
     }
-}
-
-bool Transcoder::okToCancel()
-{
-//    QScopedPointer<QMessageBox> messageBox(new QMessageBox(nullptr));
-//    messageBox->setWindowFlags( Qt::Dialog | Qt::WindowCloseButtonHint );
-//    messageBox->setWindowModality(Qt::WindowModal);
-//    messageBox->setIcon(QMessageBox::Question);
-//    messageBox->setWindowTitle("Cancel Transcoding");
-//    messageBox->setText("Are you sure you want to interrupt the transcoding operation?");
-
-//    messageBox->addButton(QMessageBox::Yes);
-//    messageBox->addButton(QMessageBox::No);
-//    messageBox->exec();
-//    if(messageBox->clickedButton() == messageBox->button(QMessageBox::Yes))
-//        return true;
-//    return false;
 }
 
 QString Transcoder::getErrorString(TranscoderError e)

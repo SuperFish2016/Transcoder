@@ -2,13 +2,13 @@
 #include "../utils/buffer.h"
 using namespace TSR;
 
-ProResDecoder::ProResDecoder(const VideoSource& s):
-    Decoder(s)
+ProResDecoder::ProResDecoder(TranscoderOption* option):
+    Decoder(option)
 {
 
 }
 
-FrameBuffer* ProResDecoder::decodeFrame(quint32 i)
+FrameBuffer* ProResDecoder::decodeFrame(qint32 i)
 {
     uchar data[10];
     FrameBuffer* buffer = new FFmpegBuffer();

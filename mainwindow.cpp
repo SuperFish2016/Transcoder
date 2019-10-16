@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     s.beginGroup("TRANSCODE");
     ui->lineEdit->setText(s.value("VIDEO").toString());
     transcoder = nullptr;
+    progressDlg = new ProgressWidget(ui->widget);
 }
 
 MainWindow::~MainWindow()
@@ -32,25 +33,36 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::showImage(const QImage& image)
 {
-    ui->label->setPixmap(QPixmap::fromImage(image));
+    ui->label->setPixmap(QPixmap::fromImage(image).scaled(ui->label->width(), ui->label->height(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
 void MainWindow::on_pushButton_clicked()
 {
-    VideoSource r;
-    r.fileName = ui->lineEdit->text();
-    r.frameCount = 30000;
-    r.entryPoint = 0;
-    r.duration = 29900;
-    QList<VideoSource> list = QList<VideoSource>() << r;
+    if(transcoder != nullptr)
+    {
+        transcoder->stop();
+        transcoder = nullptr;
+    }
+    else {
+        VideoSource r;
+        r.fileName = ui->lineEdit->text();
+        r.frameCount = 30000;
+        r.entryPoint = 0;
+        r.duration = 29900;
+        QList<VideoSource> list = QList<VideoSource>() << r;
 
-    Transcoder::TrancoderParams params;
-    params.videoList = list;
-    params.encodeThreadNumber = 5;
-    params.outputFileName = "ThisIsTestOutputFileName.mxf";
-    transcoder = new Transcoder(params);
-    connect(transcoder, &Transcoder::imageReady, this, &MainWindow::showImage);
-    transcoder->start();
+        TranscoderOption params;
+        params.sourceInfo.filename = r.fileName.toStdString();
+        params.sourceInfo.startFrame = 0;
+        params.sourceInfo.endFrame = 500;
+        params.encodingThreadCount = 5;
+        params.outputFilename = "ThisIsTestOutputFileName.mxf";
+        transcoder = new Transcoder(params);
+        connect(transcoder, &Transcoder::imageReady, this, &MainWindow::showImage);
+        connect(transcoder, &Transcoder::currentProgress, progressDlg, &ProgressWidget::setProgress);
+        connect(transcoder, &Transcoder::currentProgressText, progressDlg, &ProgressWidget::setProgressText);
+        transcoder->start();
+    }
 }
 
 

@@ -17,10 +17,16 @@ extern "C"
 using namespace TSR;
 
 
-FFmpegDecoder::FFmpegDecoder(const VideoSource& s):
-    Decoder(s), input_frame_(nullptr), input_packet_(nullptr)
+FFmpegDecoder::FFmpegDecoder(TranscoderOption* option):
+    Decoder(option), input_frame_(nullptr), input_packet_(nullptr)
 {
     qDebug() << "FFmpeg Decoder created.";
+}
+
+FFmpegDecoder::~FFmpegDecoder()
+{
+    qDebug() << "FFmpeg Decoder freed.";
+    closeDecoder();
 }
 
 bool FFmpegDecoder::openDecoder()
@@ -33,7 +39,10 @@ bool FFmpegDecoder::openDecoder()
 
 void FFmpegDecoder::closeDecoder()
 {
-
+    av_frame_free(&input_frame_);
+    av_packet_free(&input_packet_);
+    avcodec_free_context(&input_codec_ctx_);
+    avformat_close_input(&input_fmt_ctx_);
 }
 
 QString getDurationTime(long long duration)
@@ -72,7 +81,7 @@ bool FFmpegDecoder::openFile()
 {
     input_fmt_ctx_ = nullptr;
     int ret;
-    if((ret = avformat_open_input(&input_fmt_ctx_, videoSource_.fileName.toStdString().c_str(),nullptr, nullptr)) < 0){
+    if((ret = avformat_open_input(&input_fmt_ctx_, transOptions_->sourceInfo.filename.c_str(),nullptr, nullptr)) < 0){
         qDebug() << "Cannot open input file, error code: " << ret; return ret;
     }
     if((ret = avformat_find_stream_info(input_fmt_ctx_, nullptr)) < 0){
@@ -85,7 +94,7 @@ bool FFmpegDecoder::openFile()
     {
         AVStream* stream = input_fmt_ctx_->streams[i];
         AVCodec* dec_codec;
-        qDebug() << "File name:" << videoSource_.fileName;
+        qDebug() << "File name:" << transOptions_->sourceInfo.filename.c_str();
         qDebug() << "Codec Id: " << stream->codecpar->codec_id;
         qDebug() << "format name:" << input_fmt_ctx_->iformat->long_name;
 
@@ -115,11 +124,11 @@ bool FFmpegDecoder::openFile()
             }
             qDebug() << " codec ctx width & height: " << input_codec_ctx_->width << input_codec_ctx_->height;
         }
-        av_dump_format(input_fmt_ctx_, 0, videoSource_.fileName.toStdString().c_str(), 0);
+        av_dump_format(input_fmt_ctx_, 0, transOptions_->sourceInfo.filename.c_str(), 0);
         break;
     }
     qDebug() << getDurationTime(input_fmt_ctx_->duration);
-    videoSource_.frameCount = getDurationFrameCount(input_fmt_ctx_->duration, input_codec_ctx_->framerate);
+   // videoSource_.frameCount = getDurationFrameCount(input_fmt_ctx_->duration, input_codec_ctx_->framerate);
 
 
     input_frame_ = av_frame_alloc();
@@ -140,45 +149,45 @@ bool FFmpegDecoder::openFile()
 }
 
 
-FrameBuffer* FFmpegDecoder::decodeFrame(quint32 i)
+FrameBuffer* FFmpegDecoder::decodeFrame(qint32 i)
 {
-    FFmpegBuffer* buffer = nullptr;
 
-    while(1)
+    int frameFinished;
+    FFmpegBuffer* buffer = nullptr;
+    input_codec_ctx_->refcounted_frames = 1;
+    while(av_read_frame(input_fmt_ctx_, input_packet_) >= 0)
     {
-        int ret = av_read_frame(input_fmt_ctx_, input_packet_);
-        if(ret != 0)
+
+        if(input_packet_->stream_index == 0)
         {
-            qDebug() << "Read frame finished.";
-            break;;
-        }
-        ret = avcodec_send_packet(input_codec_ctx_, input_packet_);
-        av_packet_unref(input_packet_);
-        if(ret!=0){
-            continue;
-        }
-        ret = avcodec_receive_frame(input_codec_ctx_, input_frame_);
-        qDebug() << " codec ctx width & height: " << input_codec_ctx_->width << input_codec_ctx_->height;
-        if(ret == 0)
-        {
-            if(input_codec_ctx_->frame_number  < static_cast<int>(i))
+            AVFrame* out_frame = av_frame_alloc();
+            avcodec_decode_video2(input_codec_ctx_,  out_frame, &frameFinished, input_packet_);
+            if(frameFinished)
             {
-                continue;
-            }
-            else if(input_codec_ctx_->frame_number == static_cast<int>(i))
-            {
-                qDebug() << " Sucessfully decode frame number: " << input_codec_ctx_->frame_number << "pts: " << input_frame_->pts;
-                buffer = new FFmpegBuffer();
-                buffer->setAVFrame(input_frame_);
-                buffer->setAVCodecCtx(input_codec_ctx_);
-                break;
-            }
-            else
-            {
-                qDebug() << " decode frame number: " << i << " failed. current codec_ctx_->frame_number: " << input_codec_ctx_->frame_number;
-                //break;
+                if(input_codec_ctx_->frame_number  < static_cast<int>(i))
+                {
+                    continue;
+                }
+                else if(input_codec_ctx_->frame_number == static_cast<int>(i))
+                {
+                    qDebug() << " Sucessfully decode frame number: " << input_codec_ctx_->frame_number << "pts: " << input_frame_->pts;
+                    buffer = new FFmpegBuffer();
+                    FFmpegBuffer::FrameInfo buffInfo;
+                    buffInfo.width = input_codec_ctx_->width;
+                    buffInfo.height = input_codec_ctx_->height;
+                    buffInfo.pix_fmt = input_codec_ctx_->pix_fmt;
+                    buffer->setAVFrame(out_frame);
+                    buffer->setAVFrameInfo(buffInfo);
+                    break;
+                }
+                else
+                {
+                    qDebug() << " decode frame number: " << i << " failed. current codec_ctx_->frame_number: " << input_codec_ctx_->frame_number;
+                    //break;
+                }
             }
         }
+
     }
     return buffer;
 }

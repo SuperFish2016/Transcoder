@@ -1,6 +1,7 @@
 #include "encoder.h"
 #include "ffmpegencoder.h"
 #include "jpeg2000encoder.h"
+#include "rgbdataencoder.h"
 using namespace TSR;
 
 Encoder::Encoder(const EncoderParams& s)
@@ -24,6 +25,8 @@ Encoder* EncoderFactory::createEncoder(Encoder::EncoderType encoder, const Encod
     case Encoder::FFMPEG_Encoder:
         e = new FFmpegEncoder(params);
         break;
+    case Encoder::RGBData_Encoder:
+        e = new RGBDataEncoder(params);
     }
     return e;
 }

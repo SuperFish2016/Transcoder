@@ -48,17 +48,31 @@ private:
 class FFmpegBuffer : public FrameBuffer
 {
 public:
+    struct FrameInfo
+    {
+        int width;
+        int height;
+        int pix_fmt;
+    };
+public:
     FFmpegBuffer();
     ~FFmpegBuffer() override;
     virtual BufferType bufferType() const override{return FrameBuffer::FFmpegBuffer;}
 
     AVFrame* avFrame();
     void setAVFrame(AVFrame* f);
-    AVCodecContext* avFrameCtx();
-    void setAVCodecCtx(AVCodecContext* ctx);
+
+    /* add this frameInfo with simple info instead of AVContextCodec.
+    *  if pass context ctx, after decoder end, the context ctx will be freed. It will caused a crash.
+    */
+    const FrameInfo& avFrameInfo();
+    void setAVFrameInfo(const FrameInfo&);
+
+    void setUserFreeFlag(){needBeFreedByUser_ = true;}
 private:
     AVFrame* av_frame_;
-    AVCodecContext* av_frame_ctx_;
+    FrameInfo av_frame_info_;
+    bool needBeFreedByUser_;
 };
 }
 

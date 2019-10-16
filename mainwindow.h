@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QDebug>
 #include <QFileInfo>
-
+#include "progresswidget.h"
 
 #include "transcoder/transcoder.h"
 namespace Ui {
@@ -31,6 +31,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    ProgressWidget* progressDlg;
     Transcoder* transcoder;
 };
 

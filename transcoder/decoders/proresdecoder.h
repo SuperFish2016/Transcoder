@@ -4,6 +4,7 @@
 #include <QThread>
 #include "decoder.h"
 #include "../utils/videodefs.h"
+struct TranscoderOption;
 namespace TSR
 {
     class FrameBuffer;
@@ -12,11 +13,11 @@ namespace TSR
 class ProResDecoder : public Decoder
 {
 public:
-    ProResDecoder(const VideoSource& s);
+    ProResDecoder(TranscoderOption* option);
     ~ProResDecoder(){}
     virtual void closeDecoder(){}
     virtual QString decoderName() const{return "ProResDecoder";}
-    TSR::FrameBuffer* decodeFrame(quint32 i);
+    TSR::FrameBuffer* decodeFrame(qint32 i);
 };
 
 #endif // PRORESDECODER_H

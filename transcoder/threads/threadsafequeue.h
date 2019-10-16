@@ -8,7 +8,7 @@
 #include "../utils/buffer.h"
 #include <QDebug>
 #include <QMutexLocker>
-#define QUEUE_SIZE 164
+#include "../utils/transcoder_common.h"
 // 问题1，QWaitCondition 是不能喝QMutexLocker共同使用的
 // 结论2，QReaderWriterLocker适合一个写线程和多个读线程的情形
 
@@ -42,7 +42,7 @@ public:
     void enqueue(TSR::FrameBuffer* data)
     {
         mutex.lock();
-        if(queue.size() >= 64)
+        if(queue.size() >= DecodedFramesBufferSize)
             QueueIsNotFull.wait(&mutex);// 此时queue队列已经满了，需要等待队列不满的信号，才能继续干活
         queue.enqueue(data);
 
@@ -57,7 +57,7 @@ public:
         {
             QueueIsNotEmpty.wait(&mutex);
         }
-        TSR::FrameBuffer* data = NULL;
+        TSR::FrameBuffer* data = nullptr;
         if(!queue.isEmpty())
         {
             data = queue.dequeue();

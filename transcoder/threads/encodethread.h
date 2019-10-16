@@ -8,7 +8,7 @@ class EncodeThread : public QThread
 {
     Q_OBJECT
 public:
-    EncodeThread(DecodedFramesQueue* DecodedFramesQueue, EncodedFramesVector* encodedFramesVector, quint32 maxBufferSize, volatile bool *stopped);
+    EncodeThread(DecodedFramesQueue* DecodedFramesQueue, EncodedFramesVector* encodedFramesVector, qint32 maxBufferSize, volatile bool *stopped, TranscoderOption* transOption);
     ~EncodeThread(){}
     void setId(qint32 id){id_ = id;}
     qint32 id() const{ return id_;}
@@ -22,8 +22,9 @@ private:
     EncodedFramesVector* encodedFramesVector_;
     qint32 maxBufferSize_;
     qint32 id_;
-    volatile bool *stopped_;
     Encoder* encoder_;
+    volatile bool *stopped_;
+    TranscoderOption* transOptions_;
 };
 
 #endif // ENCODERTHREAD_H

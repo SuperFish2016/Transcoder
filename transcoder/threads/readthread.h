@@ -13,16 +13,16 @@ class ReadThread : public QThread
 {
     Q_OBJECT
 public:
-    ReadThread(DecodedFramesQueue* queue, const QList<VideoSource>& videoList_, volatile bool *stopped_);
+    ReadThread(DecodedFramesQueue* queue, volatile bool *stopped_, TranscoderOption* transOption);
     void putOneFrame(FrameBuffer*);
 signals:
     void reportStatus(TranscoderError stauts);
 protected:
     void run();
 private:
-    QList<VideoSource>  videoList_;
-    DecodedFramesQueue*     framesQueue_;
-    volatile bool       *stopped_;
+    DecodedFramesQueue*  framesQueue_;
+    volatile bool*       stopped_;
+    TranscoderOption*    transOption_;
 };
 
 #endif // READER_H

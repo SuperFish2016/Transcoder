@@ -6,7 +6,7 @@
 #include <QWaitCondition>
 #include "../utils/buffer.h"
 #include <QDebug>
-#define  J2KFramesVectorSize 164
+#define  EncodedFramesBufferSize 164
 // 问题1，QWaitCondition 是不能喝QMutexLocker共同使用的
 // 结论2，QReaderWriterLocker适合一个写线程和多个读线程的情形
 // 此处Vector用于存放编码后的J2K数据，供写线程调用
@@ -30,7 +30,7 @@ public:
     void pushData(TSR::FrameBuffer* buffer)
     {
         QMutexLocker locker(&lock);
-        while(vector.count() >= J2KFramesVectorSize)
+        while(vector.count() >= EncodedFramesBufferSize)
         {
             VectorIsNotFull.wait(&lock);// 此时queue队列已经满了，需要等待队列不满的信号，才能继续干活
         }

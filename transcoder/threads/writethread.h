@@ -9,10 +9,10 @@ class WriteThread : public QThread
 {
     Q_OBJECT
 public:
-    WriteThread(qint32 frameCount, EncodedFramesVector* j2kFrameVector, const QString& filename, volatile bool *stopped):
+    WriteThread(qint32 frameCount, EncodedFramesVector* encodedFramesVector, const QString& filename, volatile bool *stopped):
         frameCount_(frameCount),
         fileName_(filename),
-        j2kFrameVector_(j2kFrameVector),
+        encodedFramesVector_(encodedFramesVector),
         stopped_(stopped)
     {
 
@@ -21,18 +21,18 @@ protected:
     void run();
 signals:
     void progress(int i);
-    void progressText(const QString&);
+    void progressText(const QString& elapsed, const QString& remainint);
     void reportStatus(TranscoderError stauts);
     void qImageReady(const QImage& image);
 private:
     bool createWriter();
-    void updateProgressBar(int currentFrame, int elapsedTime);
+    void updateProgressText(int currentFrame, int elapsedTime);
 private:
     QTime  timer_;
     Writer* writer_;
     qint32  frameCount_;
     QString fileName_;
-    EncodedFramesVector* j2kFrameVector_;
+    EncodedFramesVector* encodedFramesVector_;
     volatile bool *stopped_;
 };
 

@@ -4,11 +4,13 @@
 #include <QThread>
 #include "decoder.h"
 #include "../utils/videodefs.h"
+#include "../utils/transcoder_common.h"
 class AVFormatContext;
 class AVCodecContext;
 class AVCodecParserContext;
 class AVFrame;
 class AVPacket;
+struct TranscoderOption;
 namespace TSR
 {
     class FrameBuffer;
@@ -23,14 +25,12 @@ typedef struct StreamContext
 class FFmpegDecoder : public Decoder
 {
 public:
-    FFmpegDecoder(const VideoSource& s);
-    ~FFmpegDecoder() override{}
+    FFmpegDecoder(TranscoderOption* option);
+    ~FFmpegDecoder() override;
     virtual void closeDecoder() override;
     virtual bool openDecoder() override;
     virtual QString decoderName() const override{return "FFmpeg";}
-    TSR::FrameBuffer* decodeFrame(quint32 i) override;
-
-    int frameCount;
+    TSR::FrameBuffer* decodeFrame(qint32 i) override;
 private:
     bool openFile();
 
@@ -39,6 +39,7 @@ private:
     AVFrame*  input_frame_;
     AVPacket* input_packet_;
     StreamContext* stream_ctx_;
+
 };
 
 

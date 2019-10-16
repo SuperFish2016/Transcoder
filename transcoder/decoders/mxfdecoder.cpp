@@ -3,13 +3,13 @@
 #include <QDebug>
 using namespace TSR;
 
-MXFDecoder::MXFDecoder(const VideoSource& s )
-    :Decoder(s)
+MXFDecoder::MXFDecoder(TranscoderOption* option )
+    :Decoder(option)
 {
     qDebug() << "FFmpeg Encoder created.";
 }
 
-FrameBuffer* MXFDecoder::decodeFrame(quint32 i)
+FrameBuffer* MXFDecoder::decodeFrame(qint32 i)
 {
     uchar *data = new uchar[10];
     J2KBuffer* buffer = new J2KBuffer(data, 10, i);

@@ -10,7 +10,8 @@ public:
     enum EncoderType
     {
         JPEG2000_Encoder = 0,
-        FFMPEG_Encoder
+        FFMPEG_Encoder,
+        RGBData_Encoder
     };
 
     struct EncoderParams

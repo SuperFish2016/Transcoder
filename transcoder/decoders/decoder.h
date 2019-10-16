@@ -3,6 +3,7 @@
 #include <QString>
 #include <QThread>
 #include "../utils/videodefs.h"
+struct TranscoderOption;
 namespace TSR
 {
     class FrameBuffer;
@@ -18,7 +19,7 @@ public:
     };
 
 public:
-    Decoder(const VideoSource& s);
+    Decoder(TranscoderOption* options);
     virtual ~Decoder();
     /* Try to open decoder for input file, after create the Decoder,
      * then should call this to open input file decoder, decoder should return if open failed.
@@ -26,17 +27,16 @@ public:
     virtual bool openDecoder() = 0;
     virtual void closeDecoder() = 0;
     virtual QString decoderName() const = 0;
-    virtual TSR::FrameBuffer* decodeFrame(quint32 i) = 0;
+    virtual TSR::FrameBuffer* decodeFrame(qint32 i) = 0;
 
-    qint32 frameCount(){return videoSource_.frameCount;}
 protected:
-    VideoSource  videoSource_;
+    TranscoderOption* transOptions_;
 };
 
 class DecoderFactory
 {
 public:
-    static Decoder* createDecoder(Decoder::DecoderType decoder, const VideoSource& source);
+    static Decoder* createDecoder(Decoder::DecoderType decoder, TranscoderOption* option);
 };
 
 #endif // DECODER_H

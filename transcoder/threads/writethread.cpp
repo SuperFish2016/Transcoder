@@ -35,7 +35,8 @@ void WriteThread::run()
         return;
     }
 
-
+    if(!writer_->open())
+        return;
     TSR::FrameBuffer* buffer = nullptr;
     for(int i = 0; i < frameCount_; i++)
     {
@@ -45,7 +46,7 @@ void WriteThread::run()
         {
             if(*stopped_)
                 break;
-            buffer = j2kFrameVector_->takeOne(i);
+            buffer = encodedFramesVector_->takeOne(i);
             if(buffer != nullptr)
                 break;
         }
@@ -53,22 +54,34 @@ void WriteThread::run()
             break;
        writer_->writeFrame(buffer);
 
+       TSR::J2KBuffer* j2kBuffer = dynamic_cast<TSR::J2KBuffer*>(buffer);
        TSR::FFmpegBuffer* ffmpegBuffer = dynamic_cast<TSR::FFmpegBuffer*>(buffer);
+       if(j2kBuffer != nullptr)
+       {
+           if(j2kBuffer->data() != nullptr)
+           {
+               QImage frameImage(j2kBuffer->data(), 800, 640, 800 *3 , QImage::Format_RGB888);
+               emit qImageReady(frameImage.copy());
+           }
+       }
        if(ffmpegBuffer != nullptr)
        {
-           QImage frameImage(ffmpegBuffer->avFrame()->data[0], ffmpegBuffer->avFrame()->linesize[0] / 3, ffmpegBuffer->avFrameCtx()->height, ffmpegBuffer->avFrame()->linesize[0] , QImage::Format_RGB888);
-           emit qImageReady(frameImage.copy());
+           if(ffmpegBuffer->avFrame() != nullptr)
+           {
+               QImage frameImage(ffmpegBuffer->avFrame()->data[0], ffmpegBuffer->avFrameInfo().width, ffmpegBuffer->avFrameInfo().height,
+                       ffmpegBuffer->avFrame()->linesize[0] , QImage::Format_RGB888);
+               emit qImageReady(frameImage.copy());
+           }
        }
 
         // do the write buffer data into file.
         delete buffer;
-        updateProgressBar(i, timer_.elapsed());
+        updateProgressText(i, timer_.elapsed());
     }
-
     emit progress(frameCount_);
 }
 
-void WriteThread::updateProgressBar(int currentFrame, int timeElapsed)
+void WriteThread::updateProgressText(int currentFrame, int timeElapsed)
 {
     emit progress(currentFrame + 1);
     if(currentFrame % 40 == 0)
@@ -76,8 +89,8 @@ void WriteThread::updateProgressBar(int currentFrame, int timeElapsed)
         if(timeElapsed < 0.00001) timeElapsed = 10;
         int fps = currentFrame * 1000.0 / timeElapsed;
         if(fps < 1) fps = 1;
-        emit progressText(tr("Encoding \"%1\" \nElapsed Time: %2  Estimated Remaining: %3").
-                          arg(fileName_).arg(msToStandardTime(timeElapsed)).arg(msToStandardTime((frameCount_ - currentFrame) * 1000/ fps)));
+        emit progressText(QString("Elapsed Time: %1").arg(msToStandardTime(timeElapsed)),
+                          QString("Estimated Remaining: %1 , (fps %2)").arg(msToStandardTime((frameCount_ - currentFrame) * 1000/ fps)).arg(fps));
     }
 }
 

@@ -50,14 +50,17 @@ void TSR::J2KBuffer::setData(uchar *data, qint32 data_size)
 }
 
 TSR::FFmpegBuffer::FFmpegBuffer()
+    :av_frame_(nullptr),av_frame_ctx_(nullptr),needBeFreedByUser_(false)
 {
 
 }
 
 TSR::FFmpegBuffer::~FFmpegBuffer()
 {
-    av_frame_free(&av_frame_);
-   // avcodec_free_context(&av_frame_ctx_);
+    if(needBeFreedByUser_)
+        av_freep(&this->avFrame()->data[0]);
+    av_frame_unref(av_frame_);
+    qDebug() << "ffmpegbuffer :unref frame number -> " << this->frame_number_;
 }
 
 AVFrame* TSR::FFmpegBuffer::avFrame()
@@ -70,12 +73,12 @@ void TSR::FFmpegBuffer::setAVFrame(struct AVFrame *f)
     av_frame_ = f;
 }
 
-AVCodecContext* TSR::FFmpegBuffer::avFrameCtx()
+const TSR::FFmpegBuffer::FrameInfo& TSR::FFmpegBuffer::avFrameInfo()
 {
-    return av_frame_ctx_;
+    return av_frame_info_;
 }
 
-void TSR::FFmpegBuffer::setAVCodecCtx(AVCodecContext *ctx)
+void TSR::FFmpegBuffer::setAVFrameInfo(const FrameInfo &f)
 {
-    av_frame_ctx_ = ctx;
+    av_frame_info_ = f;
 }

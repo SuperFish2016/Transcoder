@@ -13,19 +13,16 @@ class WriteThread;
 class EncodeThread;
 class ReadThread;
 
+/**
+ * @brief Transcoder end flag
+ * 1,
+ */
+
 class Transcoder : public QObject
 {
     Q_OBJECT
 public:
-    struct TrancoderParams
-    {
-        QList<VideoSource> videoList;
-        qint32  encodeThreadNumber;
-        QString outputFileName;
-    };
-
-public:
-    Transcoder(const TrancoderParams& transParams);
+    Transcoder(const TranscoderOption& transParams);
     ~Transcoder();
     /* return true is transcoder is running. */
     bool isTranscoding();
@@ -36,14 +33,14 @@ public:
 private:
     void createThreads();
     void cleanUp();
-    bool okToCancel();
     QString getErrorString(TranscoderError);
 signals:
+    // send a qiamge to display current picture. eg: send to a player.
     void imageReady(const QImage& image);
     /* current progress */
-    void setProgress(int i);
+    void currentProgress(int i);
     /* current progress text. eg: elapsed time: 00:10:00:00 */
-    void setProgressText(const QString&);
+    void currentProgressText(const QString& elapsed, const QString& remaining);
 public slots:
     void cancelTranscoding();
 private slots:
@@ -58,7 +55,7 @@ private:
     volatile bool stopped_;
 
     TranscoderError  error_;
-    TrancoderParams  transParams_;
+    TranscoderOption transOptions_;
     qint32 framesNeedBeWritten;
 };
 #endif // TRANSCODER_H

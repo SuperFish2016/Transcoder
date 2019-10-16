@@ -1,8 +1,8 @@
 #include "readthread.h"
 #include "../decoders/decoder.h"
 #include <QDebug>
-ReadThread::ReadThread(DecodedFramesQueue* queue, const QList<VideoSource>& videolist, volatile bool *stopped)
-    :videoList_(videolist), framesQueue_(queue), stopped_(stopped)
+ReadThread::ReadThread(DecodedFramesQueue* queue, volatile bool *stopped, TranscoderOption* transOption)
+    :framesQueue_(queue), stopped_(stopped), transOption_(transOption)
 {
 
 }
@@ -15,44 +15,28 @@ void ReadThread::putOneFrame(FrameBuffer *frame)
 void ReadThread::run()
 {
     qDebug() << "ReadThread Thread > Started. ";
-    QListIterator<VideoSource> iter(videoList_);
-    while(iter.hasNext())
+    QScopedPointer<Decoder> decoder ;
+    qint32 frameIndex = 0;
+    decoder.reset(DecoderFactory::createDecoder(Decoder::FFmpeg_Decoder, transOption_));
+    if(!decoder->openDecoder())
     {
-        VideoSource video = iter.next();
-        //video.fileName = "/Users/chentao/Desktop/HPCA_BRCM_C.264";
-        //video.fileName = "/Users/chentao/Desktop/pp.MPG";
-        Decoder* decoder = nullptr;
+        emit reportStatus(TSR_DECODER_OPEN_ERROR);
+        return;
+    }
+    for(qint32 i = transOption_->sourceInfo.startFrame; i <= transOption_->sourceInfo.endFrame; i++)
+    {
         if(*stopped_)
-            break;
-        bool hasError = false;
-        //if(video.fileName.endsWith("264"))
         {
-            qint32 frameIndex = 0;
-            decoder = DecoderFactory::createDecoder(Decoder::FFmpeg_Decoder, video);
-            if(!decoder->openDecoder())
-                break;
-            qDebug() << "Decoder Open Successfully.";
-            video.duration = decoder->frameCount();
-            for(quint32 i = video.entryPoint; i < video.duration + video.entryPoint; i++)
-            {
-                if(*stopped_)
-                {
-                    hasError = true; // just for break inner loop.
-                    break;
-                }
-                FrameBuffer* frame = decoder->decodeFrame(i + 1);
-                if(frame == nullptr)
-                {
-                   hasError = true;
-                   emit reportStatus(TSR_DECODER_ERROR);
-                   break;
-                }
-                frame->setFrameNumber(frameIndex++);
-                putOneFrame(frame);
-            }
-        }
-        if(hasError)
             break;
+        }
+        FrameBuffer* frame = decoder->decodeFrame(i + 1);
+        if(frame == nullptr)
+        {
+            emit reportStatus(TSR_DECODER_ERROR);
+            break;
+        }
+        frame->setFrameNumber(frameIndex++);
+        putOneFrame(frame);
     }
     emit reportStatus(TSR_DECODER_END);
     qDebug() << "ReadThread Thread > END. ";
